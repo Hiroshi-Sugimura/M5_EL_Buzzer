@@ -12,8 +12,8 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-#define WIFI_SSID "sugimulab"
-#define WIFI_PASS "4428211065122"
+#define WIFI_SSID "your SSID"
+#define WIFI_PASS "your WiFi password"
 
 WiFiClient client;
 WiFiUDP elUDP;
