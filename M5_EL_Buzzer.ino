@@ -1,9 +1,8 @@
+////////////////////////////////////////////////////////////
+// Buzzer with ECHONET Lite protocol
+// Copyright (C) Hiroshi SUGIMURA 2013.09.27
+////////////////////////////////////////////////////////////
 #pragma mark - Depend ESP8266Audio and ESP8266_Spiram libraries
-/*
-  cd ~/Arduino/libraries
-  git clone https://github.com/earlephilhower/ESP8266Audio
-  git clone https://github.com/Gianbacchio/ESP8266_Spiram
-*/
 
 #include <M5Stack.h>
 #include <WiFi.h>
@@ -22,6 +21,8 @@ EL echo(elUDP, EL_Buzzer, 0x01 );
 
 void printNetData();
 
+int soundNumber;
+char soundFilename[12]; // /sound0.mp3 \0
 AudioGeneratorMP3 *mp3;
 AudioFileSourceSD *file;
 AudioOutputI2S *out;
@@ -46,24 +47,28 @@ void setup()
   echo.begin();            // EL 起動シーケンス
   echo.details[0xB1] = new byte[2] {0x01, 0x41}; // 音発生設定
 
-  // 一般照明の状態，繋がった宣言として立ち上がったことをコントローラに知らせるINFを飛ばす
+  // 機器の状態，繋がった宣言として立ち上がったことをコントローラに知らせるINFを飛ばす
   const byte deoj[] = {0x05, 0xff, 0x01};
-  const byte edt[] = {0x01, 0x30};
+  const byte edt[] = {0x01, 0x30}; // power on
   echo.sendMultiOPC1(deoj, EL_INF, 0x80, edt);
 
   // mp3 init
+  soundNumber = 1;
+  strcpy( soundFilename, "/sound1.mp3");
+
   out = new AudioOutputI2S(0, 1); // Output to builtInDAC
   out->SetOutputModeMono(true);
-  // out->SetGain(0.03);
   mp3 = new AudioGeneratorMP3();
 }
 
 void draw() {
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setTextColor(WHITE);
-  M5.Lcd.setCursor(130, 200);
+  M5.Lcd.setCursor(30, 180);
   M5.Lcd.setTextSize(2);
-  M5.Lcd.print("[play]");
+  M5.Lcd.print("[<<]   [sound");
+  M5.Lcd.print(soundNumber);
+  M5.Lcd.print("]   [>>]");
 }
 
 void stopPlaying()
@@ -93,7 +98,7 @@ void loop()
     if (!mp3->loop()) {
       stopPlaying();
     }
-    return;
+    return;  // 音が鳴っている間は操作を受け付けないことにする。
   } else {
     draw();
     delay(100);
@@ -122,10 +127,19 @@ void loop()
           case 0xE0: //ブザー音種別設定, 0x31--0x38
             switch ( echo._rBuffer[EL_EDT] ) {
               case 0x31:
+              case 0x32:
+              case 0x33:
+              case 0x34:
+              case 0x35:
+              case 0x36:
+              case 0x37:
+              case 0x38:
+                soundNumber = echo._rBuffer[EL_EDT] - 0x30;
                 if (mp3->isRunning()) {
                   stopPlaying();
                 }
-                file = new AudioFileSourceSD("/sound1.mp3");
+                sprintf(soundFilename, "/sound%d.mp3", soundNumber);
+                file = new AudioFileSourceSD(soundFilename);
                 id3 = new AudioFileSourceID3(file);
                 mp3->begin(id3, out);
                 break;
@@ -181,12 +195,11 @@ void loop()
 
   if (M5.BtnA.wasPressed())
   {
-    if (mp3->isRunning()) {
-      stopPlaying();
+    if (soundNumber == 1) {
+      soundNumber = 8;
+    } else {
+      soundNumber -= 1;
     }
-    file = new AudioFileSourceSD("/incorrect1.mp3");
-    id3 = new AudioFileSourceID3(file);
-    mp3->begin(id3, out);
   }
 
   if (M5.BtnB.wasPressed())
@@ -194,19 +207,21 @@ void loop()
     if (mp3->isRunning()) {
       stopPlaying();
     }
-    file = new AudioFileSourceSD("/tin1.mp3");
+    sprintf( soundFilename, "/sound%d.mp3", soundNumber);
+    Serial.print("filename: ");
+    Serial.println(soundFilename);
+    file = new AudioFileSourceSD(soundFilename);
     id3 = new AudioFileSourceID3(file);
     mp3->begin(id3, out);
   }
 
   if (M5.BtnC.wasPressed())
   {
-    if (mp3->isRunning()) {
-      stopPlaying();
+    if (soundNumber == 8) {
+      soundNumber = 1;
+    } else {
+      soundNumber += 1;
     }
-    file = new AudioFileSourceSD("/pno-cs.mp3");
-    id3 = new AudioFileSourceID3(file);
-    mp3->begin(id3, out);
   }
 }
 
