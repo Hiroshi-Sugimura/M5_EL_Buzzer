@@ -17,7 +17,7 @@
 
 WiFiClient client;
 WiFiUDP elUDP;
-EL echo(elUDP, EL_Buzzer, 0x01 );
+EL echo(elUDP, EL_Buzzer, 0x01 ); // EL_Buzzer = 0x02, 0xA0
 
 void printNetData();
 
