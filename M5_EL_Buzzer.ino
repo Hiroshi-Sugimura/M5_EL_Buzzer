@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////
 // Buzzer with ECHONET Lite protocol
-// Copyright (C) Hiroshi SUGIMURA 2013.09.27
+// Copyright (C) Hiroshi SUGIMURA 2018.11.16
 ////////////////////////////////////////////////////////////
 #pragma mark - Depend ESP8266Audio and ESP8266_Spiram libraries
 
 #include <M5Stack.h>
 #include <WiFi.h>
-#include <EL.h>
+#include <EL.h>  // need install ECHONET Lite module from Library Manager
 #include "AudioFileSourceSD.h"
 #include "AudioFileSourceID3.h"
 #include "AudioGeneratorMP3.h"
@@ -19,7 +19,6 @@ WiFiClient client;
 WiFiUDP elUDP;
 EL echo(elUDP, EL_Buzzer, 0x01 );
 
-void printNetData();
 
 int soundNumber;
 char soundFilename[12]; // /sound0.mp3 \0
@@ -28,6 +27,65 @@ AudioFileSourceSD *file;
 AudioOutputI2S *out;
 AudioFileSourceID3 *id3;
 
+
+////////////////////////////////////////////////////////////
+// local function
+void printNetData();
+
+
+void draw() {
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextColor(WHITE);
+  M5.Lcd.setCursor(30, 180);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.print("[<<]   [sound");
+  M5.Lcd.print(soundNumber);
+  M5.Lcd.print("]   [>>]");
+}
+
+void stopPlaying()
+{
+  if (mp3) {
+    mp3->stop();
+  }
+  if (id3) {
+    id3->close();
+    delete id3;
+    id3 = nullptr;
+  }
+  if (file) {
+    file->close();
+    delete file;
+    file = nullptr;
+  }
+}
+
+
+// debug
+void printNetData()
+{
+  Serial.println("-----------------------------------");
+
+  // IP
+  // print your WiFi shield's IP address:
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP  Address: ");
+  Serial.println(ip);
+
+  IPAddress dgwip = WiFi.gatewayIP();
+  Serial.print("DGW Address: ");
+  Serial.println(dgwip);
+
+  IPAddress smip = WiFi.subnetMask();
+  Serial.print("SM  Address: ");
+  Serial.println(smip);
+
+  Serial.println("-----------------------------------");
+}
+
+
+////////////////////////////////////////////////////////////
+// arduino: initialize
 void setup()
 {
   M5.begin();
@@ -61,35 +119,8 @@ void setup()
   mp3 = new AudioGeneratorMP3();
 }
 
-void draw() {
-  M5.Lcd.fillScreen(BLACK);
-  M5.Lcd.setTextColor(WHITE);
-  M5.Lcd.setCursor(30, 180);
-  M5.Lcd.setTextSize(2);
-  M5.Lcd.print("[<<]   [sound");
-  M5.Lcd.print(soundNumber);
-  M5.Lcd.print("]   [>>]");
-}
 
-void stopPlaying()
-{
-  if (mp3) {
-    mp3->stop();
-  }
-  if (id3) {
-    id3->close();
-    delete id3;
-    id3 = nullptr;
-  }
-  if (file) {
-    file->close();
-    delete file;
-    file = nullptr;
-  }
-}
-
-byte *pdcedt = nullptr; // テンポラリ
-
+// arduino: mainloop
 void loop()
 {
   M5.update();
@@ -103,9 +134,6 @@ void loop()
     draw();
     delay(100);
   }
-
-  // パケット貰ったらやる
-  pdcedt = nullptr;
 
   if ( echo.read() ) // 0!=はなくてもよいが，Warning出るのでつけとく
   { // 受け取った内容読み取り，あったら中へ
@@ -158,13 +186,6 @@ void loop()
             M5.Lcd.print(" ");
             M5.Lcd.println(echo._rBuffer[EL_EDT], HEX);
             break;
-        }
-
-        // pdcedtを使ったらクリア
-        if (pdcedt != nullptr)
-        {
-          delete[] pdcedt;
-          pdcedt = nullptr;
         }
 
         if (echo._rBuffer[EL_ESV] == EL_SETC)
@@ -225,25 +246,6 @@ void loop()
   }
 }
 
-
-// debug
-void printNetData()
-{
-  Serial.println("-----------------------------------");
-
-  // IP
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP  Address: ");
-  Serial.println(ip);
-
-  IPAddress dgwip = WiFi.gatewayIP();
-  Serial.print("DGW Address: ");
-  Serial.println(dgwip);
-
-  IPAddress smip = WiFi.subnetMask();
-  Serial.print("SM  Address: ");
-  Serial.println(smip);
-
-  Serial.println("-----------------------------------");
-}
+////////////////////////////////////////////////////////////
+// EOF
+////////////////////////////////////////////////////////////
