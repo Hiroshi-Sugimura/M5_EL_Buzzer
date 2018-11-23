@@ -12,13 +12,12 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-#define WIFI_SSID "your SSID"
-#define WIFI_PASS "your WiFi password"
+#define WIFI_SSID "your SSID"               // !!! change
+#define WIFI_PASS "your WiFi password"      // !!! change
 
 WiFiClient client;
 WiFiUDP elUDP;
 EL echo(elUDP, EL_Buzzer, 0x01 ); // EL_Buzzer = 0x02, 0xA0
-
 
 int soundNumber;
 char soundFilename[12]; // /sound0.mp3 \0
@@ -170,6 +169,7 @@ void loop()
                 file = new AudioFileSourceSD(soundFilename);
                 id3 = new AudioFileSourceID3(file);
                 mp3->begin(id3, out);
+                echo.details[ 0xE0 ] = new byte[2] {0x01, soundNumber}; // power
                 break;
               default:
                 break;
