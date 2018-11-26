@@ -12,8 +12,8 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 
-#define WIFI_SSID "your SSID"               // !!! change
-#define WIFI_PASS "your WiFi password"      // !!! change
+#define WIFI_SSID "testwifi2G"      // !!! change to yor wifi SSID
+#define WIFI_PASS "0001223344"      // !!! change to yor wifi password
 
 WiFiClient client;
 WiFiUDP elUDP;
@@ -28,7 +28,9 @@ AudioFileSourceID3 *id3;
 
 
 ////////////////////////////////////////////////////////////
-// local function
+// local functions (プロトタイプ宣言は必要ないけどIndexになるので)
+void draw();
+void stopPlaying();
 void printNetData();
 
 
@@ -93,8 +95,10 @@ void setup()
   M5.Lcd.println("wifi connect start");
 
   WiFi.begin(WIFI_SSID, WIFI_PASS);
+  M5.Lcd.println("WiFi wait");
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.println("wait...");
+    M5.Lcd.print(".");
+    Serial.print(".");
     delay(1000);
   }
   M5.Lcd.println("wifi connect ok");
@@ -124,6 +128,7 @@ void loop()
 {
   M5.update();
 
+  // 音が鳴っているとき
   if (mp3->isRunning()) {
     if (!mp3->loop()) {
       stopPlaying();
@@ -132,6 +137,17 @@ void loop()
   } else {
     draw();
     delay(100);
+  }
+  // WiFiが調子悪い
+  if ( WiFi.status() != WL_CONNECTED) {
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println("WiFi wait");
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    while (WiFi.status() != WL_CONNECTED) {
+      M5.Lcd.print(".");
+      Serial.print(".");
+      delay(1000);  // 接続するまで別の処理で邪魔しない
+    }
   }
 
   if ( echo.read() ) // 0!=はなくてもよいが，Warning出るのでつけとく
@@ -213,8 +229,8 @@ void loop()
     }
   }
 
-
-  if (M5.BtnA.wasPressed())
+  // sound check
+  if (M5.BtnA.wasPressed())  // prev sound number
   {
     if (soundNumber == 1) {
       soundNumber = 8;
@@ -223,7 +239,7 @@ void loop()
     }
   }
 
-  if (M5.BtnB.wasPressed())
+  if (M5.BtnB.wasPressed())  // play sound
   {
     if (mp3->isRunning()) {
       stopPlaying();
@@ -236,7 +252,7 @@ void loop()
     mp3->begin(id3, out);
   }
 
-  if (M5.BtnC.wasPressed())
+  if (M5.BtnC.wasPressed()) // next sound number
   {
     if (soundNumber == 8) {
       soundNumber = 1;
