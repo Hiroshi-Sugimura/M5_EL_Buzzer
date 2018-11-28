@@ -106,11 +106,12 @@ void setup()
 
   printNetData();
   echo.begin();            // EL 起動シーケンス
+  echo.details[0x9E] = new byte[3] {0x02, 0x01, 0xE0}; // change set property map
   echo.details[0xB1] = new byte[2] {0x01, 0x41}; // 音発生設定
 
   // 機器の状態，繋がった宣言として立ち上がったことをコントローラに知らせるINFを飛ばす
   const byte deoj[] = {0x05, 0xff, 0x01};
-  const byte edt[] = {0x01, 0x30}; // power on
+  const byte edt[]  = {0x01, 0x30}; // power on
   echo.sendMultiOPC1(deoj, EL_INF, 0x80, edt);
 
   // mp3 init
@@ -150,8 +151,8 @@ void loop()
     }
   }
 
-  if ( echo.read() ) // 0!=はなくてもよいが，Warning出るのでつけとく
-  { // 受け取った内容読み取り，あったら中へ
+  if ( echo.read() )  // 受け取った内容読み取り，あったら中へ
+  {
 
     // -----------------------------------
     // ESVがSETとかGETとかで動作をかえる
